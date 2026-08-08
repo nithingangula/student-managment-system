@@ -1,46 +1,96 @@
 const express = require("express");
+const pool = require("./db");
 
 const app = express();
 
 app.use(express.json());
 
+// Home
 app.get("/", (req, res) => {
     res.send("Welcome to Student Management API");
 });
 
-app.get("/students", (req, res) => {
-    res.send("Get All Students");
+// GET - All students
+app.get("/students", async (req, res) => {
+    try {
+        const result = await pool.query("SELECT * FROM students");
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Database error" });
+    }
 });
 
-app.get("/students/:id", (req, res) => {
-    const id = req.params.id;
-    res.send(`Student ID: ${id}`);
+// GET - One student by ID
+app.get("/students/:id", async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const result = await pool.query(
+            "SELECT * FROM students WHERE id = $1",
+            [id]
+        );
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Database error" });
+    }
 });
 
-app.post("/students", (req, res) => {
-    const student = req.body;
-    res.send({
-        message: "Student Added Successfully",
-        data: student
-    });
+// POST - Add student
+app.post("/students", async (req, res) => {
+    try {
+        const { name, roll, email } = req.body;
+
+        const result = await pool.query(
+            "INSERT INTO students (name, roll, email) VALUES ($1, $2, $3) RETURNING *",
+            [name, roll, email]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Database error" });
+    }
 });
 
-app.put("/students/:id", (req, res) => {
-    const id = req.params.id;
-    const student = req.body;
+// PUT - Update student
+app.put("/students/:id", async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { name, roll, email } = req.body;
 
-    res.send({
-        message: `Student ${id} Updated Successfully`,
-        data: student
-    });
+        const result = await pool.query(
+            "UPDATE students SET name = $1, roll = $2, email = $3 WHERE id = $4 RETURNING *",
+            [name, roll, email, id]
+        );
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Database error" });
+    }
 });
 
-app.delete("/students/:id", (req, res) => {
-    const id = req.params.id;
+// DELETE - Delete student
+app.delete("/students/:id", async (req, res) => {
+    try {
+        const id = req.params.id;
 
-    res.send(`Student ${id} Deleted Successfully`);
+        const result = await pool.query(
+            "DELETE FROM students WHERE id = $1 RETURNING *",
+            [id]
+        );
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Database error" });
+    }
 });
 
+// Start server
 app.listen(3000, () => {
     console.log("Server running on http://localhost:3000");
 });
