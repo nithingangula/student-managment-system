@@ -69,7 +69,7 @@ app.put("/students/:id", async (req, res) => {
         res.json(result.rows[0]);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Database error" });
+        res.status(500).json({ error: "DATABASE ERROR" });
     }
 });
 
@@ -86,7 +86,7 @@ app.delete("/students/:id", async (req, res) => {
         res.json(result.rows[0]);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Database error" });
+        res.status(500).json({ error: "DATABASE ERROR" });
     }
 });
 
