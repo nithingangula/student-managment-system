@@ -72,6 +72,12 @@ app.put("/students/:id", async (req, res) => {
         res.status(500).json({ error: "DATABASE ERROR" });
     }
 });
+// 404 - Route not found
+        app.use((req, res) => {
+            res.status(404).json({
+                error: "Route not found"
+    });
+});
 
 // DELETE - Delete student
 app.delete("/students/:id", async (req, res) => {
