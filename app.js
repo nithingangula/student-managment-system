@@ -1,17 +1,48 @@
+require("dotenv").config();
 const express = require("express");
 const pool = require("./db");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
-
+app.use(cors());
 app.use(express.json());
 
 // Home
 app.get("/", (req, res) => {
     res.send("Welcome to Student Management API");
 });
+const jwt = require("jsonwebtoken");
+
+const authMiddleware = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).json({
+            error: "Token required"
+        });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        req.user = decoded;
+
+        next();
+    } catch (error) {
+        res.status(401).json({
+            error: "Invalid or expired token"
+        });
+    }
+};
+
+module.exports = authMiddleware;
 
 // GET - All students
-app.get("/students", async (req, res) => {
+app.get("/students", authMiddleware, async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM students");
         res.json(result.rows);
@@ -72,12 +103,7 @@ app.put("/students/:id", async (req, res) => {
         res.status(500).json({ error: "DATABASE ERROR" });
     }
 });
-// 404 - Route not found
-        app.use((req, res) => {
-            res.status(404).json({
-                error: "Route not found"
-    });
-});
+
 
 // DELETE - Delete student
 app.delete("/students/:id", async (req, res) => {
@@ -95,6 +121,13 @@ app.delete("/students/:id", async (req, res) => {
         res.status(500).json({ error: "DATABASE ERROR" });
     }
 });
+// 404 - Route not found
+        app.use((req, res) => {
+            res.status(404).json({
+                error: "Route not found"
+    });
+});
+
 
 // Start server
 app.listen(3000, () => {
