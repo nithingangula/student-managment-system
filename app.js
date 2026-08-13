@@ -13,34 +13,31 @@ app.use(express.json());
 app.get("/", (req, res) => {
     res.send("Welcome to Student Management API");
 });
-const jwt = require("jsonwebtoken");
+app.post("/login", (req, res) => {
+    const { username, password } = req.body;
 
-const authMiddleware = (req, res, next) => {
-    const authHeader = req.headers.authorization;
+    if (username === "nithin" && password === "1234") {
+        const token = jwt.sign(
+            {
+                userId: 1,
+                username: username
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "1h"
+            }
+        );
 
-    if (!authHeader) {
-        return res.status(401).json({
-            error: "Token required"
+        res.json({
+            message: "Login successful",
+            token: token
         });
-    }
-
-    const token = authHeader.split(" ")[1];
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        req.user = decoded;
-
-        next();
-    } catch (error) {
+    } else {
         res.status(401).json({
-            error: "Invalid or expired token"
+            error: "Invalid username or password"
         });
     }
-};
-
-module.exports = authMiddleware;
-
+});
 // GET - All students
 app.get("/students", authMiddleware, async (req, res) => {
     try {
