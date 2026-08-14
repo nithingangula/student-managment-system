@@ -17,7 +17,7 @@ app.use(express.json());
 // =========================
 
 app.get("/", (req, res) => {
-    res.send("Welcome to Student Management API");
+    res.send("Welcome to Student Management API - JWT Authentication Enabled");
 });
 
 
