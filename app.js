@@ -1,26 +1,111 @@
 require("dotenv").config();
+
 const express = require("express");
 const pool = require("./db");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// Home
+// =========================
+// HOME
+// =========================
+
 app.get("/", (req, res) => {
     res.send("Welcome to Student Management API");
 });
-app.post("/login", (req, res) => {
-    const { username, password } = req.body;
 
-    if (username === "nithin" && password === "1234") {
+
+// =========================
+// REGISTER
+// =========================
+
+app.post("/register", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({
+                error: "Username and password are required"
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const result = await pool.query(
+            "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username, role",
+            [username, hashedPassword]
+        );
+
+        res.status(201).json({
+            message: "User registered successfully",
+            user: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("REGISTER ERROR:", error);
+
+        if (error.code === "23505") {
+            return res.status(409).json({
+                error: "Username already exists"
+            });
+        }
+
+        res.status(500).json({
+            error: "Database error"
+        });
+    }
+});
+
+
+// =========================
+// LOGIN
+// =========================
+
+app.post("/login", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({
+                error: "Username and password are required"
+            });
+        }
+
+        const result = await pool.query(
+            "SELECT * FROM users WHERE username = $1",
+            [username]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({
+                error: "Invalid username or password"
+            });
+        }
+
+        const user = result.rows[0];
+
+        const isMatch = await bcrypt.compare(
+            password,
+            user.password
+        );
+
+        if (!isMatch) {
+            return res.status(401).json({
+                error: "Invalid username or password"
+            });
+        }
+
         const token = jwt.sign(
             {
-                userId: 1,
-                username: username
+                userId: user.id,
+                username: user.username,
+                role: user.role
             },
             process.env.JWT_SECRET,
             {
@@ -32,24 +117,43 @@ app.post("/login", (req, res) => {
             message: "Login successful",
             token: token
         });
-    } else {
-        res.status(401).json({
-            error: "Invalid username or password"
+
+    } catch (error) {
+        console.error("LOGIN ERROR:", error);
+
+        res.status(500).json({
+            error: error.message
         });
     }
 });
-// GET - All students
+
+
+// =========================
+// GET - ALL STUDENTS
+// =========================
+
 app.get("/students", authMiddleware, async (req, res) => {
     try {
-        const result = await pool.query("SELECT * FROM students");
+        const result = await pool.query(
+            "SELECT * FROM students"
+        );
+
         res.json(result.rows);
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Database error" });
+        console.error("STUDENTS ERROR:", error);
+
+        res.status(500).json({
+            error: error.message
+        });
     }
 });
 
-// GET - One student by ID
+
+// =========================
+// GET - ONE STUDENT
+// =========================
+
 app.get("/students/:id", async (req, res) => {
     try {
         const id = req.params.id;
@@ -60,13 +164,21 @@ app.get("/students/:id", async (req, res) => {
         );
 
         res.json(result.rows);
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Database error" });
+
+        res.status(500).json({
+            error: "Database error"
+        });
     }
 });
 
-// POST - Add student
+
+// =========================
+// POST - ADD STUDENT
+// =========================
+
 app.post("/students", async (req, res) => {
     try {
         const { name, roll, email } = req.body;
@@ -77,16 +189,25 @@ app.post("/students", async (req, res) => {
         );
 
         res.status(201).json(result.rows[0]);
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Database error" });
+
+        res.status(500).json({
+            error: "Database error"
+        });
     }
 });
 
-// PUT - Update student
+
+// =========================
+// PUT - UPDATE STUDENT
+// =========================
+
 app.put("/students/:id", async (req, res) => {
     try {
         const id = req.params.id;
+
         const { name, roll, email } = req.body;
 
         const result = await pool.query(
@@ -95,14 +216,21 @@ app.put("/students/:id", async (req, res) => {
         );
 
         res.json(result.rows[0]);
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "DATABASE ERROR" });
+
+        res.status(500).json({
+            error: "Database error"
+        });
     }
 });
 
 
-// DELETE - Delete student
+// =========================
+// DELETE - DELETE STUDENT
+// =========================
+
 app.delete("/students/:id", async (req, res) => {
     try {
         const id = req.params.id;
@@ -113,20 +241,32 @@ app.delete("/students/:id", async (req, res) => {
         );
 
         res.json(result.rows[0]);
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "DATABASE ERROR" });
+
+        res.status(500).json({
+            error: "Database error"
+        });
     }
 });
-// 404 - Route not found
-        app.use((req, res) => {
-            res.status(404).json({
-                error: "Route not found"
+
+
+// =========================
+// 404 - ROUTE NOT FOUND
+// =========================
+
+app.use((req, res) => {
+    res.status(404).json({
+        error: "Route not found"
     });
 });
 
 
-// Start server
+// =========================
+// START SERVER
+// =========================
+
 app.listen(3000, () => {
     console.log("Server running on http://localhost:3000");
 });
