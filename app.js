@@ -132,19 +132,17 @@ app.post("/login", async (req, res) => {
 // GET - ALL STUDENTS
 // =========================
 
-app.get("/students", authMiddleware, async (req, res) => {
+app.get("/students", async (req, res) => {
     try {
-        const result = await pool.query(
-            "SELECT * FROM students"
-        );
+        const result = await pool.query("SELECT * FROM students");
 
         res.json(result.rows);
 
     } catch (error) {
-        console.error("STUDENTS ERROR:", error);
+        console.error(error);
 
         res.status(500).json({
-            error: error.message
+            error: "Database error"
         });
     }
 });
@@ -154,7 +152,7 @@ app.get("/students", authMiddleware, async (req, res) => {
 // GET - ONE STUDENT
 // =========================
 
-app.get("/students/:id", async (req, res) => {
+app.get("/students/:id",authMiddleware, async (req, res) => {
     try {
         const id = req.params.id;
 
