@@ -5,7 +5,10 @@ const pool = require("./db");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const authMiddleware = require("./middleware/authMiddleware");
+const {
+    authMiddleware,
+    authorizeRole
+} = require("./middleware/authMiddleware");
 
 const app = express();
 
@@ -177,7 +180,7 @@ app.get("/students/:id",authMiddleware, async (req, res) => {
 // POST - ADD STUDENT
 // =========================
 
-app.post("/students", async (req, res) => {
+app.post("/students",async (req, res) => {
     try {
         const { name, roll, email } = req.body;
 
@@ -202,7 +205,11 @@ app.post("/students", async (req, res) => {
 // PUT - UPDATE STUDENT
 // =========================
 
-app.put("/students/:id", async (req, res) => {
+app.put(
+    "/students/:id",
+    authMiddleware,
+    authorizeRole("admin"),
+    async (req, res) => {
     try {
         const id = req.params.id;
 
@@ -229,7 +236,11 @@ app.put("/students/:id", async (req, res) => {
 // DELETE - DELETE STUDENT
 // =========================
 
-app.delete("/students/:id", async (req, res) => {
+app.delete(
+    "/students/:id",
+    authMiddleware,
+    authorizeRole("admin"),
+    async (req, res) => {
     try {
         const id = req.params.id;
 
