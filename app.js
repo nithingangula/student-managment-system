@@ -214,6 +214,17 @@ app.put(
         const id = req.params.id;
 
         const { name, roll, email } = req.body;
+        if (!name || !roll || !email) {
+    return res.status(400).json({
+        error: "Name, roll and email are required"
+    });
+}
+
+if (!email.includes("@")) {
+    return res.status(400).json({
+        error: "Invalid email"
+    });
+}
 
         const result = await pool.query(
             "UPDATE students SET name = $1, roll = $2, email = $3 WHERE id = $4 RETURNING *",
