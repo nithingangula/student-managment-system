@@ -163,6 +163,11 @@ app.get("/students/:id",authMiddleware, async (req, res) => {
             "SELECT * FROM students WHERE id = $1",
             [id]
         );
+        if (result.rows.length === 0) {
+    return res.status(404).json({
+        error: "Student not found"
+    });
+}
 
         res.json(result.rows);
 
