@@ -217,6 +217,13 @@ app.put(
     async (req, res) => {
     try {
         const id = req.params.id;
+        const id = req.params.id;
+
+if (isNaN(id)) {
+    return res.status(400).json({
+        error: "Student ID must be a number"
+    });
+}
 
         const { name, roll, email } = req.body;
         if (!name || !roll || !email) {
