@@ -155,21 +155,23 @@ app.get("/students", async (req, res) => {
 // GET - ONE STUDENT
 // =========================
 
-app.get("/students/:id",authMiddleware, async (req, res) => {
+app.get("/students", authMiddleware, async (req, res) => {
     try {
-        const id = req.params.id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+
+        const offset = (page - 1) * limit;
 
         const result = await pool.query(
-            "SELECT * FROM students WHERE id = $1",
-            [id]
+            "SELECT * FROM students ORDER BY id LIMIT $1 OFFSET $2",
+            [limit, offset]
         );
-        if (result.rows.length === 0) {
-    return res.status(404).json({
-        error: "Student not found"
-    });
-}
 
-        res.json(result.rows);
+        res.json({
+            page: page,
+            limit: limit,
+            students: result.rows
+        });
 
     } catch (error) {
         console.error(error);
